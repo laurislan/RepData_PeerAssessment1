@@ -54,6 +54,9 @@ activityG <- activityNONA %>%
   summarise(steps = mean(steps))
 
 with(activityG,plot(interval, steps, type="l", xlab="5-minute interval", ylab="Total steps", main="Total number of steps taken"))
+
+# The 5-minute interval that contains the maximum number of steps
+activityG[which(activityG$steps == max(activityG$steps, na.rm = TRUE)),]$interval
 ```
 
 ## Imputing missing values
