@@ -1,0 +1,98 @@
+---
+title: "Reproducible Research: Peer Assessment 1"
+author: "Laurislan"
+date: "31 de marzo de 2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+Load the required packages
+```{r setup, include=FALSE, echo=TRUE}
+require(dplyr)
+```
+
+## Loading and preprocessing the data
+In this chunk you'll find the code for loading and preprocessing the data into a format suitable for the analysis
+
+```{r Download and load data, echo=TRUE}
+setwd('G:/Mi unidad/Pers/COURSERA/COURSE 5 - Reproducible Research/project1')
+fileUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+if(!file.exists("./data_activity.zip")){
+download.file(fileUrl, destfile = "./data_activity.zip")}
+
+fileName <- "activity.csv"
+object.size(fileName)
+if (!file.exists(fileName)){unzip("./data_activity.zip")}
+
+## Omit the NA values
+activity <- read.csv("./activity.csv")
+activityNONA <- na.omit(read.csv("./activity.csv"))
+```
+
+## Mean total number of steps taken per day
+1. Calculate the total number of steps taken per day
+2. If you do not understand the difference between a histogram and a barplot, research the difference between them. Make a histogram of the total number of steps taken each day
+3. Calculate and report the mean and median of the total number of steps taken per day
+
+```{r mean total number of steps, echo=TRUE}
+## HISTOGRAM
+with(activityNONA, hist(
+  activityNONA$steps, col="red",xlab="Steps",main = "Total number of steps taken per day"))
+
+meanSteps <- round(mean(activityNONA$steps),2)
+medianSteps <- median(activityNONA$steps)
+
+```
+
+## Average daily activity pattern
+1. Make a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+```{r Average daily activity pattern, echo=TRUE}
+activityG <- activityNONA %>% 
+  group_by(interval) %>% 
+  summarise(steps = mean(steps))
+
+with(activityG,plot(interval, steps, type="l", xlab="5-minute interval", ylab="Total steps", main="Total number of steps taken"))
+```
+
+## Imputing missing values
+1. Total number of missing values in the dataset 
+2. Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
+3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
+Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+```{r Imputing missing values, echo=TRUE}
+## 1
+activityNA <- nrow(activity)-nrow(activityNONA)
+activityComplete <- activity
+for (i in 1:nrow(activityComplete)){
+  if(is.na(activityComplete[i,1])){
+    interval <- activityComplete[i,3]
+    activityComplete[i,1] <- mean(activityNONA[activityNONA$interval == interval,1])
+  }
+}
+
+with(activityComplete, hist(
+  activityComplete$steps, col="red",xlab="Steps",main = "Total number of steps taken per day"))
+
+meanSteps2 <- round(mean(activityComplete$steps),2)
+medianSteps2 <- median(activityComplete$steps)
+
+```
+
+## Differences in activity patterns between weekdays and weekends
+```{r Differences in activity patterns between weekdays and weekends}
+activityComplete$date2 <- as.Date(activityComplete$date)
+activityComplete$weekdays <- weekdays(activityComplete$date2)
+activityComplete$dayType <- ifelse(weekdays(activityComplete$date2) %in% c('sábado','domingo'),'weekend','weekday')
+
+activityG2 <- activityComplete %>% 
+  group_by(dayType, interval) %>% 
+  summarise(steps = mean(steps)) 
+
+library(ggplot2)
+ggplot(data=activityG2, aes(x=interval, y=steps)) +
+  geom_line(color="steelblue")+
+  facet_grid(dayType~.)
+```
